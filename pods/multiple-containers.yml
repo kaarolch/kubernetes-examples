@@ -1,0 +1,38 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: nginx
+spec:
+  containers:
+  - name: nginx
+    image: nginx:1.7.9
+    ports:
+    - containerPort: 80
+  - name: check-host-80
+    image: busybox
+    command: [ "/bin/sh", "-c", "echo GET / | nc 127.0.0.1 80 ; sleep 60; netstat -tnlp | tee /etc/hello /data/hello; sleep 2h" ]
+    volumeMounts:
+      - mountPath: "/data"
+        name: mypv
+  - name: check-files
+    image: busybox
+    command: [ "/bin/sh", "-c", "watch -n 15 'ls -al /etc/hello /data/hello'" ]
+    volumeMounts:
+      - mountPath: "/data"
+        name: mypv
+  volumes:
+      - name: mypv
+        persistentVolumeClaim:
+          claimName: examplepvc
+
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: examplepvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10M
