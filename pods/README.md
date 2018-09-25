@@ -2,6 +2,10 @@
 Below there are short description about objects definition inside yaml files.
 
 ## Multiple containers in one pods
+
+```
+kubectl create -f multiple-containers.yml 
+```
 This example run 3 containers inside a one pod called`nginx`:
 *   `nginx` - run nginx that listen on port 80
 *   `check-host-80` - check if nginx is accessible via `localhost:80`. Also it redirects
