@@ -10,7 +10,7 @@ spec:
     - containerPort: 80
   - name: check-host-80
     image: busybox
-    command: [ "/bin/sh", "-c", "echo GET / | nc 127.0.0.1 80 ; sleep 60; netstat -tnlp | tee /etc/hello /data/hello; sleep 2h" ]
+    command: [ "/bin/sh", "-c", "echo GET / | nc 127.0.0.1 80 ; netstat -tnlp | tee /etc/hello /data/hello;" ]
     volumeMounts:
       - mountPath: "/data"
         name: mypv
