@@ -1,0 +1,47 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: nginx
+spec:
+  initContainers:
+  - name: git-sync
+    image: alpine/git
+    imagePullPolicy: Always
+    command: [ "git", "clone", "$(GIT_SYNC_REPO)", "$(GIT_SYNC_DEST)", "-v" ]
+    env:
+    - name: GIT_SYNC_REPO
+      value: "git@github.com:kaarolch/kubernetes-examples.git"
+    - name: GIT_SYNC_DEST
+      value: "error-pages"
+    volumeMounts:
+      - mountPath: "/git"
+        name: src
+  - name: tpl
+    image: kaarol/tpl:latest
+    imagePullPolicy: Always
+    env:
+    - name: SRC_PATH
+      value: /error-pages/templates/error-pages
+    - name: DST_PATH
+      value: /nginx/error-pages
+    volumeMounts:
+      - mountPath: "/src"
+        name: src
+      - mountPath: "/dst"
+        name: dst
+  containers:
+  - name: nginx
+    image: nginx:1.7.9
+    ports:
+    - containerPort: 80
+  - name: check-files
+    image: busybox
+    command: [ "/bin/sh", "-c", "watch -n 15 'ls -al /etc/hello /data/hello'" ]
+    volumeMounts:
+      - mountPath: "/etc/nginx/errors"
+        name: dst
+  volumes:
+    - name: src
+      emptyDir: {}
+    - name: dst
+      emptyDir: {}

@@ -1,0 +1,115 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: limit
+  labels:
+    type: edu4
+    env: test
+
+---
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: mem-cpu-limit-range
+  namespace: limit
+spec:
+  limits:
+  - default:
+      memory: 128M
+      cpu: 0.2
+    defaultRequest:
+      memory: 64M
+      cpu: 0.1
+    type: Container
+
+---
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: pod-demo
+  namespace: limit
+spec:
+  hard:
+    pods: "4"
+
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: nginx-no-limit-and-request
+  namespace: limit
+spec:
+  containers:
+  - name: nginx
+    image: nginx:1.7.9
+    ports:
+    - containerPort: 80
+
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: nginx-no-limit
+  namespace: limit
+spec:
+  containers:
+  - name: nginx
+    image: nginx:1.7.9
+    ports:
+    - containerPort: 80
+    resources:
+      requests:
+        memory: "96Mi"
+        cpu: "100m"
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: nginx-limit
+  namespace: limit
+spec:
+  containers:
+  - name: nginx
+    image: nginx:1.7.9
+    ports:
+    - containerPort: 80
+    resources:
+      limits:
+        memory: "800Mi"
+        cpu: "800m"
+      requests:
+        memory: "600Mi"
+        cpu: "400m"
+
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: nginx-overloaded
+  namespace: limit
+spec:
+  containers:
+  - name: nginx
+    image: nginx:1.7.9
+    ports:
+    - containerPort: 80
+    resources:
+      limits:
+        memory: "32Gi"
+        cpu: "10"
+      requests:
+        memory: "32Gi"
+        cpu: "10"
+
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: nginx-test
+  namespace: limit
+spec:
+  containers:
+  - name: nginx
+    image: nginx:1.7.9
+    ports:
+    - containerPort: 80
