@@ -27,7 +27,7 @@ kubectl create -f different-container-type.yml
 ```
 
 ## Pod limits
-
+Multiple pods with different limit/request schedules.
 ```
 kubectl create -f pods-limits.yaml
 ```
@@ -37,3 +37,9 @@ Useful command:
 *   Get limits for the `limit` namespace: `kubectl get limits -n limit`
 *   Get pods details: `kubectl describe pod nginx-overloaded -n limit`
 *   Cleaning: `kubectl delete ns limit`
+
+## Mount different resources to container
+Multiple pods with different object mounted.
+```
+kubectl create -f mount-resources.yml
+```

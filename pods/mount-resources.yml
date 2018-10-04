@@ -11,6 +11,31 @@ type: Opaque
 
 ---
 apiVersion: v1
+data:
+  source: |
+    VERSION=1.2.34
+    REVISION=rc1
+    TYPE=PART
+    REQ=ZOOKEEPER
+kind: ConfigMap
+metadata:
+  creationTimestamp: null
+  name: variables
+
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: pvc-example
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10M
+
+---
+apiVersion: v1
 kind: Pod
 metadata:
   name: kubernetes-mount-example
@@ -21,8 +46,8 @@ metadata:
   annotations:
     ntp.com/conifg: '[
       {
-        "name": "ntp"
-        "version": "0.2"
+        "name": "ntp",
+        "version": "0.2",
         "type": "EDU4"
       }
     ]'
@@ -34,12 +59,15 @@ spec:
       args:
       - while true; do
           if [[ -e /etc/podinfo/labels ]]; then
-            echo -en '\n\n'; cat /etc/podinfo/labels; fi;
+            echo -en '\n---Labels---\n'; cat /etc/podinfo/labels; fi;
           if [[ -e /etc/podinfo/annotations ]]; then
-            echo -en '\n\n'; cat /etc/podinfo/annotations; fi;
+            echo -en '\n---Annotations---\n'; cat /etc/podinfo/annotations; fi;
           sleep 5;
           if [[ -e /etc/passwd ]]; then
-            echo -en '\n\n'; cat /etc/passwd; fi;
+            echo -en '\n---Passwd---\n'; cat /etc/passwd; fi;
+          sleep 5;
+          if [[ -e /etc/vars/source ]]; then
+            echo -en '\n---Variable--\n'; cat /etc/vars/source; fi;
           sleep 5;
         done;
       volumeMounts:
@@ -51,6 +79,10 @@ spec:
         - mountPath: "/etc/passwd"
           name: password
           subPath: passwd
+        - mountPath: "/etc/vars"
+          name: vars
+        - mountPath: "/data"
+          name: pvcstore
   volumes:
     - name: empty
       emptyDir: {}
@@ -71,3 +103,9 @@ spec:
         - key: group
           path: group
         secretName: password-files
+    - name: vars
+      configMap:
+        name: variables
+    - name: pvcstore
+      persistentVolumeClaim:
+        claimName: pvc-example
