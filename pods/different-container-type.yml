@@ -2,46 +2,72 @@ apiVersion: v1
 kind: Pod
 metadata:
   name: nginx
+  labels:
+    app: show-stat
 spec:
   initContainers:
-  - name: git-sync
-    image: alpine/git
+  - name: download-init
+    image: appropriate/curl
     imagePullPolicy: Always
-    command: [ "git", "clone", "$(GIT_SYNC_REPO)", "$(GIT_SYNC_DEST)", "-v" ]
+    command: ["curl", "$(URL)", "-o", "$(LOCAL)", "-v"]
     env:
-    - name: GIT_SYNC_REPO
-      value: "git@github.com:kaarolch/kubernetes-examples.git"
-    - name: GIT_SYNC_DEST
-      value: "error-pages"
+    - name: URL
+      value: "https://raw.githubusercontent.com/kaarolch/kubernetes-examples/master/templates/error-pages/index.html"
+    - name: LOCAL
+      value: "/error-pages/index.html"
     volumeMounts:
-      - mountPath: "/git"
+      - mountPath: "/error-pages"
         name: src
-  - name: tpl
+  - name: tpl-init
     image: kaarol/tpl:latest
     imagePullPolicy: Always
     env:
     - name: SRC_PATH
-      value: /error-pages/templates/error-pages
+      value: "/error-pages/"
     - name: DST_PATH
-      value: /nginx/error-pages
+      value: "/nginx/error-pages"
     volumeMounts:
-      - mountPath: "/src"
+      - mountPath: "/error-pages"
         name: src
-      - mountPath: "/dst"
+      - mountPath: "/nginx/error-pages"
         name: dst
   containers:
-  - name: nginx
+  - name: nginx-main
     image: nginx:1.7.9
     ports:
     - containerPort: 80
-  - name: check-files
-    image: busybox
-    command: [ "/bin/sh", "-c", "watch -n 15 'ls -al /etc/hello /data/hello'" ]
     volumeMounts:
-      - mountPath: "/etc/nginx/errors"
+      - mountPath: "/usr/share/nginx/html"
+        name: dst
+  - name: update-sidecar
+    image: busybox
+    command: [ "/bin/sh", "-c"]
+    args:
+    - while true; do
+        echo -en "<h2>--- $(date) ---</h2><br>" > /usr/share/nginx/html/stats.html;
+        uptime >>  /usr/share/nginx/html/stats.html;
+        sleep 5;
+      done;
+    volumeMounts:
+      - mountPath: "/usr/share/nginx/html"
         name: dst
   volumes:
     - name: src
       emptyDir: {}
     - name: dst
       emptyDir: {}
+
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: show
+spec:
+  selector:
+    app: show-stat
+  type: NodePort
+  ports:
+  - protocol: TCP
+    port: 80
+    nodePort: 30666
+    targetPort: 80

@@ -1,0 +1,68 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: checkme
+  labels:
+    app: checkme
+spec:
+  containers:
+  - name: nginx
+    image: nginx:1.7.9
+    ports:
+    - containerPort: 80
+    volumeMounts:
+      - mountPath: "/usr/share/nginx/html"
+        name: dst
+  - name: update-sidecar
+    image: busybox
+    command: [ "/bin/sh", "-c"]
+    args:
+    - while true; do
+        sleep 10;
+        echo -en "<h3>Ready</h3> $(date) ---<br>" > /usr/share/nginx/html/ready.html;
+      done;
+    lifecycle:
+      postStart:
+        exec:
+          command: ["/bin/sh", "-c",  "echo I am alive. Current time $(date) >> /usr/share/nginx/html/check.html"]
+      preStop:
+        exec:
+          command: ["/bin/sh", "-c", "echo I am dead now. Current time $(date) >> /usr/share/nginx/html/check.html"]
+    livenessProbe:
+      exec:
+        command:
+          - cat
+          - /usr/share/nginx/html/active.html
+      initialDelaySeconds: 30
+      failureThreshold: 5
+      periodSeconds: 10
+    readinessProbe:
+      exec:
+        command:
+          - cat
+          - /usr/share/nginx/html/ready.html
+      initialDelaySeconds: 10
+      successThreshold: 4
+      periodSeconds: 5
+    volumeMounts:
+      - mountPath: "/usr/share/nginx/html"
+        name: dst
+  volumes:
+    - name: dst
+      emptyDir: {}
+
+
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: checkme
+spec:
+  selector:
+    app: checkme
+  type: NodePort
+  ports:
+  - protocol: TCP
+    port: 80
+    nodePort: 30667
+    targetPort: 80

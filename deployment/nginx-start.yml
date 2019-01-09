@@ -21,7 +21,7 @@ spec:
         command: ["curl", "$(URL)", "-o", "$(LOCAL)", "-v"]
         env:
         - name: URL
-          value: "https://raw.githubusercontent.com/kaarolch/kubernetes-examples/master/templates/error-pages/index.html"
+          value: "https://raw.githubusercontent.com/kaarolch/kubernetes-examples/master/templates/error-pages/index-deploy.html"
         - name: LOCAL
           value: "/error-pages/index.html"
         volumeMounts:
