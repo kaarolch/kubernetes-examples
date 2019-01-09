@@ -1,0 +1,85 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx-deployment
+  labels:
+    app: nginx
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: nginx
+  template:
+    metadata:
+      labels:
+        app: nginx
+    spec:
+      initContainers:
+      - name: download-init
+        image: appropriate/curl
+        imagePullPolicy: Always
+        command: ["curl", "$(URL)", "-o", "$(LOCAL)", "-v"]
+        env:
+        - name: URL
+          value: "https://raw.githubusercontent.com/kaarolch/kubernetes-examples/master/templates/error-pages/index.html"
+        - name: LOCAL
+          value: "/error-pages/index.html"
+        volumeMounts:
+          - mountPath: "/error-pages"
+            name: src
+      - name: tpl-init
+        image: kaarol/tpl:latest
+        imagePullPolicy: Always
+        env:
+        - name: SRC_PATH
+          value: "/error-pages/"
+        - name: DST_PATH
+          value: "/nginx/error-pages"
+        volumeMounts:
+          - mountPath: "/error-pages"
+            name: src
+          - mountPath: "/nginx/error-pages"
+            name: dst
+      - name: coffe-brake
+        image: busybox
+        imagePullPolicy: Always
+        command: ["sleep", "10s"]
+      containers:
+      - name: nginx-main
+        image: nginx:1.7.9
+        ports:
+        - containerPort: 80
+        volumeMounts:
+          - mountPath: "/usr/share/nginx/html"
+            name: dst
+      - name: update-sidecar
+        image: busybox
+        command: [ "/bin/sh", "-c"]
+        args:
+        - while true; do
+            echo -en "<h2>--- $(date) ---</h2><br>" > /usr/share/nginx/html/stats.html;
+            uptime >>  /usr/share/nginx/html/stats.html;
+            sleep 5;
+          done;
+        volumeMounts:
+          - mountPath: "/usr/share/nginx/html"
+            name: dst
+      volumes:
+        - name: src
+          emptyDir: {}
+        - name: dst
+          emptyDir: {}
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: show
+spec:
+  selector:
+    app: show-stat
+  type: NodePort
+  ports:
+  - protocol: TCP
+    port: 80
+    nodePort: 30666
+    targetPort: 80
