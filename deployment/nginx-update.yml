@@ -47,7 +47,7 @@ spec:
         command: ["sleep", "10s"]
       containers:
       - name: nginx-main
-        image: nginx:1.7.9
+        image: nginx:1.9.1
         ports:
         - containerPort: 80
         volumeMounts:
@@ -60,6 +60,7 @@ spec:
         - while true; do
             echo -en "<h2>--- $(date) ---</h2>" > /usr/share/nginx/html/stats.html;
             uptime >>  /usr/share/nginx/html/stats.html;
+            free -m >>  /usr/share/nginx/html/stats.html;
             sleep 5;
           done;
         volumeMounts:
